@@ -1,11 +1,6 @@
-use crate::{EscrowState, ESCROW_SEED};
+use crate::{error::EscrowError, EscrowState, ESCROW_SEED};
 use anchor_lang::prelude::*;
-use anchor_lang::{
-    accounts::{account::Account, program::Program, signer::Signer},
-    system_program::{transfer},
-    Accounts,
-};
-use anchor_spl::token_2022::{TransferChecked, transfer_checked};
+use anchor_spl::token_2022::{transfer_checked, TransferChecked};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{Mint, TokenAccount, TokenInterface},
@@ -55,7 +50,18 @@ pub struct Make<'info> {
     pub system_program: Program<'info, System>,
 }
 impl<'info> Make<'info> {
-    pub fn init_escrow(&mut self, seed: u64, receive: u64, bumps: &MakeBumps) -> Result<()> {
+    pub fn init_escrow(
+        &mut self,
+        seed: u64,
+        receive: u64,
+        deadline: i64,
+        bumps: &MakeBumps,
+    ) -> Result<()> {
+        require_gt!(
+            deadline,
+            Clock::get()?.unix_timestamp,
+            EscrowError::DeadlineInPast
+        );
         require_gt!(receive, 0);
         self.escrow.set_inner(EscrowState {
             seed,
@@ -63,6 +69,7 @@ impl<'info> Make<'info> {
             mint_a: self.mint_a.key(),
             mint_b: self.mint_b.key(),
             receive,
+            deadline,
             bump: bumps.escrow,
         });
         Ok(())
@@ -70,10 +77,10 @@ impl<'info> Make<'info> {
 
     pub fn deposit(&mut self, amount: u64) -> Result<()> {
         let accounts = TransferChecked {
-            from: self.maker_ata_a.to_account_info(), 
-            to: self.vault.to_account_info(), 
+            from: self.maker_ata_a.to_account_info(),
+            to: self.vault.to_account_info(),
             mint: self.mint_a.to_account_info(),
-            authority: self.maker.to_account_info()
+            authority: self.maker.to_account_info(),
         };
         let cpi_ctx = CpiContext::new(self.token_program.key(), accounts);
         transfer_checked(cpi_ctx, amount, self.mint_a.decimals)

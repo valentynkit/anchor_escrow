@@ -1,8 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_lang::{accounts::signer::Signer, Accounts};
 use anchor_spl::token_interface::{Mint, TokenInterface};
 
-use crate::{ESCROW_SEED, EscrowState};
+use crate::{error::EscrowError, EscrowState, ESCROW_SEED};
 
 #[derive(Accounts)]
 pub struct Update<'info> {
@@ -23,8 +22,13 @@ pub struct Update<'info> {
 }
 
 impl<'info> Update<'info> {
-    pub fn update(&mut self, new_receive: u64) -> Result<()>{
+    pub fn update(&mut self, new_receive: u64) -> Result<()> {
         require_gt!(new_receive, 0);
+        require_gt!(
+            self.escrow.deadline,
+            Clock::get()?.unix_timestamp,
+            EscrowError::EscrowExpired
+        );
         self.escrow.mint_b = self.mint_b.key();
         self.escrow.receive = new_receive;
         Ok(())

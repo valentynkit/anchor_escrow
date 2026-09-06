@@ -15,11 +15,19 @@ declare_id!("7cCT3NJUCV61oZkSpJvcH6d3nWaZsVjYW1YzwVoXGmLK");
 pub mod escrow_new {
     use super::*;
 
-    pub fn make(ctx: Context<Make>, seed: u64, receive: u64, deposit: u64) -> Result<()> {
-        ctx.accounts.init_escrow(seed, receive, &ctx.bumps)?;
+    pub fn make(
+        ctx: Context<Make>,
+        seed: u64,
+        receive: u64,
+        deposit: u64,
+        deadline: i64,
+    ) -> Result<()> {
+        ctx.accounts
+            .init_escrow(seed, receive, deadline, &ctx.bumps)?;
         ctx.accounts.deposit(deposit)
     }
-    pub fn take(ctx: Context<Take>) -> Result<()> {
+    pub fn take(ctx: Context<Take>, expected_transfer: u64) -> Result<()> {
+        ctx.accounts.assert_open(expected_transfer)?;
         ctx.accounts.transfer()?;
         ctx.accounts.withdraw()?;
         ctx.accounts.close()

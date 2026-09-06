@@ -1,11 +1,6 @@
-use crate::{EscrowState, ESCROW_SEED};
+use crate::{error::EscrowError, EscrowState, ESCROW_SEED};
 use anchor_lang::prelude::*;
-use anchor_lang::{
-    accounts::{account::Account, program::Program, signer::Signer},
-    system_program::transfer,
-    Accounts,
-};
-use anchor_spl::token_2022::{close_account, transfer_checked, TransferChecked, CloseAccount};
+use anchor_spl::token_2022::{close_account, transfer_checked, CloseAccount, TransferChecked};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{Mint, TokenAccount, TokenInterface},
@@ -77,6 +72,21 @@ pub struct Take<'info> {
 }
 
 impl<'info> Take<'info> {
+    pub fn assert_open(&self, expected_transfer: u64) -> Result<()> {
+        require_gt!(
+            self.escrow.deadline,
+            Clock::get()?.unix_timestamp,
+            EscrowError::EscrowExpired
+        );
+        // Taker may have read `receive` before the maker repriced it.
+        require_eq!(
+            expected_transfer,
+            self.escrow.receive,
+            EscrowError::TermsChanged
+        );
+        Ok(())
+    }
+
     pub fn transfer(&mut self) -> Result<()> {
         let accounts = TransferChecked {
             from: self.taker_ata_b.to_account_info(),
