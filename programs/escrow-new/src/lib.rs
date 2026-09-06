@@ -24,4 +24,8 @@ pub mod escrow_new {
         ctx.accounts.withdraw()?;
         ctx.accounts.close()
     }
+    pub fn refund(ctx: Context<Refund>) -> Result<()> {
+        ctx.accounts.withdraw()?;
+        ctx.accounts.close()
+    }
 }

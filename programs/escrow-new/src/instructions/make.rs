@@ -57,6 +57,7 @@ pub struct Make<'info> {
 
 impl<'info> Make<'info> {
     pub fn init_escrow(&mut self, seed: u64, receive: u64, bumps: &MakeBumps) -> Result<()> {
+        require_gt!(receive, 0);
         self.escrow.set_inner(EscrowState {
             seed,
             maker: self.maker.key(),
