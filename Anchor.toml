@@ -1,0 +1,19 @@
+skip_local_validator = true
+
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+escrow_new = "7cCT3NJUCV61oZkSpJvcH6d3nWaZsVjYW1YzwVoXGmLK"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
