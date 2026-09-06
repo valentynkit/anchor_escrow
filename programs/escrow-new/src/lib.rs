@@ -28,4 +28,8 @@ pub mod escrow_new {
         ctx.accounts.withdraw()?;
         ctx.accounts.close()
     }
+
+    pub fn update(ctx: Context<Update>, new_receive: u64) -> Result<()> {
+        ctx.accounts.update(new_receive)
+    }
 }
